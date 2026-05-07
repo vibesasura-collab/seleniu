@@ -1,0 +1,38 @@
+name: Bot 1
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - game_id_secret: GAME_ID_1
+            game_password_secret: GAME_PASSWORD_1
+          - game_id_secret: GAME_ID_2
+            game_password_secret: GAME_PASSWORD_2
+          - game_id_secret: GAME_ID_4
+            game_password_secret: GAME_PASSWORD_4
+          - game_id_secret: GAME_ID_5
+            game_password_secret: GAME_PASSWORD_5
+          - game_id_secret: GAME_ID_6
+            game_password_secret: GAME_PASSWORD_6
+          - game_id_secret: GAME_ID_11
+            game_password_secret: GAME_PASSWORD_11
+          - game_id_secret: GAME_ID_34
+            game_password_secret: GAME_PASSWORD_34
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: sudo apt-get update && sudo apt-get install -y google-chrome-stable
+      - run: mvn clean compile exec:java
+        env:
+          GAME_ID: ${{ secrets[matrix.game_id_secret] }}
+          GAME_PASSWORD: ${{ secrets[matrix.game_password_secret] }}
