@@ -9,7 +9,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-</properties>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -27,6 +27,7 @@
 
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
@@ -35,6 +36,13 @@
           <mainClass>Main</mainClass>
         </configuration>
       </plugin>
+
+      <!-- safer compile -->
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+      </plugin>
+
     </plugins>
   </build>
 </project>
