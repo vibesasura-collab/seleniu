@@ -56,4 +56,5 @@ steps:
     run: mvn -q clean compile exec:java
     env:
       GAME_ID: ${{ secrets[matrix.game_id_secret] }}
+      GAME_PASSWORD: ${{ secrets[matrix.game_password_secret] }}
 
