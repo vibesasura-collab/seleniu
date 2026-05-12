@@ -23,14 +23,24 @@ jobs:
             game_password_secret: GAME_PASSWORD_5
           - game_id_secret: GAME_ID_6
             game_password_secret: GAME_PASSWORD_6
+          - game_id_secret: GAME_ID_8
+            game_password_secret: GAME_PASSWORD_8
           - game_id_secret: GAME_ID_11
             game_password_secret: GAME_PASSWORD_11
+          - game_id_secret: GAME_ID_14
+            game_password_secret: GAME_PASSWORD_14
+          - game_id_secret: GAME_ID_19
+            game_password_secret: GAME_PASSWORD_19
+          - game_id_secret: GAME_ID_20
+            game_password_secret: GAME_PASSWORD_20
           - game_id_secret: GAME_ID_25
             game_password_secret: GAME_PASSWORD_25
           - game_id_secret: GAME_ID_29
             game_password_secret: GAME_PASSWORD_29
           - game_id_secret: GAME_ID_30
             game_password_secret: GAME_PASSWORD_30
+          - game_id_secret: GAME_ID_31
+            game_password_secret: GAME_PASSWORD_31
           - game_id_secret: GAME_ID_34
             game_password_secret: GAME_PASSWORD_34
           - game_id_secret: GAME_ID_35
