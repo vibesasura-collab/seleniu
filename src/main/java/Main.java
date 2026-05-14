@@ -66,18 +66,14 @@ public class Main {
 
             sleep(3000 + random.nextInt(2000));
 
-            // GO TO INVASION
             driver.findElement(By.cssSelector("a.urfin")).click();
             sleep(3000 + random.nextInt(2000));
 
             while (true) {
 
-                long loopStart = System.currentTimeMillis();
-
                 if (shouldStopNow(startTime)) break;
 
-                // ---------------- FIRST 3 PASS NOW FAST ----------------
-
+                // ================= STABLE PASS NOW SYSTEM =================
                 for (int i = 0; i < 3; i++) {
 
                     try {
@@ -95,30 +91,30 @@ public class Main {
 
                         if (!number.isEmpty() && Integer.parseInt(number) <= 10) {
 
-                            // CLICK PASS NOW
                             click(driver, passNow.get(0));
+                            sleep(1200);
 
-                            sleep(900);
-
-                            // CLICK YES
                             List<WebElement> yesBtn = driver.findElements(
                                     By.xpath("//span[text()='Yes!']")
                             );
 
                             if (!yesBtn.isEmpty()) {
-
                                 click(driver, yesBtn.get(0));
-
-                                System.out.println("Fast pass used: " + (i + 1));
-
-                                sleep(900);
                             }
+
+                            System.out.println("Pass used safely: " + (i + 1));
+
+                            // ⭐ stability delay (IMPORTANT)
+                            sleep(2500);
                         }
 
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        System.out.println("Pass error: " + e.getMessage());
+                        sleep(2000);
+                    }
                 }
 
-                // ---------------- NORMAL OLD ATTACK CODE ----------------
+                // ================= NORMAL ATTACK FLOW =================
 
                 List<String> attackLinks = new ArrayList<>();
 
@@ -131,147 +127,56 @@ public class Main {
                 for (WebElement e : attack2) attackLinks.add(e.getAttribute("href"));
 
                 for (String link : attackLinks) {
-
                     try {
-
                         driver.get(link);
-
                         sleep(600 + random.nextInt(800));
-
                     } catch (Exception ignored) {}
                 }
 
-                // ATTACK BUTTON
-
-                List<WebElement> attackBtn = driver.findElements(
-                        By.xpath("//span[text()='Attack']")
-                );
-
-                if (!attackBtn.isEmpty()) {
-
-                    try {
-
-                        click(driver, attackBtn.get(0));
-
-                        sleep(1000 + random.nextInt(1000));
-
-                    } catch (Exception ignored) {}
-                }
-
-                // GOLD ATTACK
-
-                List<WebElement> goldAttack = driver.findElements(
-                        By.xpath("//span[contains(text(),'Attack now for')]")
-                );
-
-                if (!goldAttack.isEmpty()) {
-
-                    try {
-
-                        String text = goldAttack.get(0).getText();
-                        String number = text.replaceAll("[^0-9]", "");
-
-                        if (!number.isEmpty() && Integer.parseInt(number) <= 10) {
-
-                            click(driver, goldAttack.get(0));
-
-                            sleep(800 + random.nextInt(800));
-
-                            List<WebElement> yes = driver.findElements(
-                                    By.xpath("//span[text()='Yes!']")
-                            );
-
-                            if (!yes.isEmpty()) {
-
-                                click(driver, yes.get(0));
-                            }
-                        }
-
-                    } catch (Exception ignored) {}
-                }
-
-                // NEXT BUTTON
-
-                List<WebElement> nextBtn = driver.findElements(
-                        By.xpath("//span[text()='Next']")
-                );
-
+                List<WebElement> nextBtn = driver.findElements(By.xpath("//span[text()='Next']"));
                 if (!nextBtn.isEmpty()) {
-
                     try {
-
                         click(driver, nextBtn.get(0));
-
-                        sleep(1000 + random.nextInt(1000));
-
+                        sleep(900);
                     } catch (Exception ignored) {}
-                }
-
-                if (shouldStopNow(startTime)) break;
-
-                long elapsed = System.currentTimeMillis() - loopStart;
-
-                long wait = 9000 + random.nextInt(4000) - elapsed;
-
-                if (wait > 0) {
-                    sleep((int) wait);
                 }
 
                 driver.navigate().refresh();
+                sleep(800);
             }
 
         } finally {
-
             driver.quit();
         }
     }
 
-    // ---------------- CLICK ----------------
-
+    // ================= CLICK FIX =================
     public static void click(WebDriver driver, WebElement element) {
-
         try {
-
             element.click();
-
         } catch (Exception e) {
-
-            try {
-
-                ((JavascriptExecutor) driver)
-                        .executeScript("arguments[0].click();", element);
-
-            } catch (Exception ignored) {}
+            ((JavascriptExecutor) driver)
+                    .executeScript("arguments[0].click();", element);
         }
     }
 
-    // ---------------- STOP CONDITIONS ----------------
-
+    // ================= STOP CONDITIONS =================
     public static boolean shouldStopNow(Instant startTime) {
-
         long mins = Duration.between(startTime, Instant.now()).toMinutes();
-
         return mins >= MAX_RUN_MINUTES || isInShutdownWindow();
     }
 
     public static boolean isInShutdownWindow() {
-
         LocalTime now = LocalTime.now(ZoneOffset.UTC);
-
         return !now.isBefore(DAILY_STOP_START)
                 || now.isBefore(DAILY_STOP_END);
     }
 
-    // ---------------- SLEEP ----------------
-
+    // ================= SLEEP =================
     public static void sleep(int ms) {
-
         try {
-
             Thread.sleep(ms);
-
         } catch (InterruptedException e) {
-
             Thread.currentThread().interrupt();
         }
     }
