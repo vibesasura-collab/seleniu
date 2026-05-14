@@ -24,22 +24,16 @@ public class Main {
 
     public static void main(String[] args) {
 
-        if (TODAY_OFF) {
-            System.out.println("Bot OFF today. Exiting.");
-            return;
-        }
+        if (TODAY_OFF) return;
 
         String user = System.getenv("GAME_ID");
         String pass = System.getenv("GAME_PASSWORD");
 
-        if (user == null || user.isEmpty() || pass == null || pass.isEmpty()) {
+        if (user == null || pass == null) {
             throw new RuntimeException("Secrets missing");
         }
 
-        if (isInShutdownWindow()) {
-            System.out.println("Shutdown window active. Exiting.");
-            return;
-        }
+        if (isInShutdownWindow()) return;
 
         WebDriverManager.chromedriver().setup();
 
@@ -58,54 +52,53 @@ public class Main {
 
             // LOGIN
             driver.get("https://elem.cards/login/");
-            sleep(2000 + random.nextInt(1000));
+            sleep(2500 + random.nextInt(1000));
 
             driver.findElement(By.name("plogin")).sendKeys(user);
             driver.findElement(By.name("ppass")).sendKeys(pass);
             driver.findElement(By.cssSelector("input[type='submit']")).click();
 
-            sleep(3000 + random.nextInt(2000));
+            sleep(3500 + random.nextInt(1500));
 
             driver.findElement(By.cssSelector("a.urfin")).click();
-            sleep(3000 + random.nextInt(2000));
+            sleep(3000);
 
             while (true) {
 
                 if (shouldStopNow(startTime)) break;
 
-                boolean actionDone = false;
+                // ================= PASS NOW =================
+                try {
+                    List<WebElement> passNow = driver.findElements(
+                            By.xpath("//*[contains(text(),'Pass now for')]")
+                    );
 
-                // ================= PASS NOW (PRIORITY 1) =================
-                List<WebElement> passNow = driver.findElements(
-                        By.xpath("//*[contains(text(),'Pass now for')]")
-                );
+                    if (!passNow.isEmpty()) {
 
-                if (!passNow.isEmpty()) {
+                        String text = passNow.get(0).getText();
+                        String number = text.replaceAll("[^0-9]", "");
 
-                    String text = passNow.get(0).getText();
-                    String number = text.replaceAll("[^0-9]", "");
+                        if (!number.isEmpty() && Integer.parseInt(number) <= 10) {
 
-                    if (!number.isEmpty() && Integer.parseInt(number) <= 10) {
+                            click(driver, passNow.get(0));
+                            sleep(900);
 
-                        click(driver, passNow.get(0));
-                        sleep(800);
+                            List<WebElement> yes = driver.findElements(
+                                    By.xpath("//span[text()='Yes!']")
+                            );
 
-                        List<WebElement> yes = driver.findElements(
-                                By.xpath("//span[text()='Yes!']")
-                        );
+                            if (!yes.isEmpty()) {
+                                click(driver, yes.get(0));
+                            }
 
-                        if (!yes.isEmpty()) {
-                            click(driver, yes.get(0));
+                            sleep(1200);
+                            continue; // IMPORTANT: restart loop immediately
                         }
-
-                        sleep(1200);
-                        actionDone = true;
                     }
-                }
+                } catch (Exception ignored) {}
 
-                // ================= ATTACK NOW BUTTON =================
-                if (!actionDone) {
-
+                // ================= ATTACK NOW =================
+                try {
                     List<WebElement> attackNow = driver.findElements(
                             By.xpath("//a[contains(@href,'/urfin/start')]")
                     );
@@ -113,52 +106,43 @@ public class Main {
                     if (!attackNow.isEmpty()) {
                         click(driver, attackNow.get(0));
                         sleep(1200);
-                        actionDone = true;
+                        continue;
                     }
-                }
+                } catch (Exception ignored) {}
 
-                // ================= ATTACK LINKS (attack0/1/2) =================
-                if (!actionDone) {
-
+                // ================= ATTACK LINKS =================
+                try {
                     List<String> links = new ArrayList<>();
 
-                    List<WebElement> attack0 = driver.findElements(By.cssSelector("a[href*='attack0']"));
-                    List<WebElement> attack1 = driver.findElements(By.cssSelector("a[href*='attack1']"));
-                    List<WebElement> attack2 = driver.findElements(By.cssSelector("a[href*='attack2']"));
+                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack0']")))
+                        links.add(e.getAttribute("href"));
 
-                    for (WebElement e : attack0) links.add(e.getAttribute("href"));
-                    for (WebElement e : attack1) links.add(e.getAttribute("href"));
-                    for (WebElement e : attack2) links.add(e.getAttribute("href"));
+                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack1']")))
+                        links.add(e.getAttribute("href"));
+
+                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack2']")))
+                        links.add(e.getAttribute("href"));
 
                     for (String link : links) {
-                        try {
-                            driver.get(link);
-                            sleep(500);
-                        } catch (Exception ignored) {}
+                        driver.get(link);
+                        sleep(500);
                     }
 
-                    actionDone = true;
-                }
+                } catch (Exception ignored) {}
 
-                // ================= NEXT BUTTON =================
-                if (!actionDone) {
-
+                // ================= NEXT =================
+                try {
                     List<WebElement> nextBtn = driver.findElements(
                             By.xpath("//span[text()='Next']")
                     );
 
                     if (!nextBtn.isEmpty()) {
                         click(driver, nextBtn.get(0));
-                        sleep(800);
-                        actionDone = true;
+                        sleep(900);
                     }
-                }
+                } catch (Exception ignored) {}
 
-                // ================= NOTHING FOUND =================
-                if (!actionDone) {
-                    driver.get(driver.getCurrentUrl()); // safer than refresh
-                    sleep(1200);
-                }
+                sleep(1500); // small stability buffer
             }
 
         } finally {
@@ -166,7 +150,7 @@ public class Main {
         }
     }
 
-    // ================= CLICK SAFE =================
+    // CLICK SAFE
     public static void click(WebDriver driver, WebElement element) {
         try {
             element.click();
@@ -176,7 +160,7 @@ public class Main {
         }
     }
 
-    // ================= STOP CONDITIONS =================
+    // STOP
     public static boolean shouldStopNow(Instant startTime) {
         long mins = Duration.between(startTime, Instant.now()).toMinutes();
         return mins >= MAX_RUN_MINUTES || isInShutdownWindow();
