@@ -1,4 +1,5 @@
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -52,6 +53,7 @@ public class Main {
         Instant startTime = Instant.now();
 
         try {
+
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
 
             // LOGIN
@@ -74,6 +76,50 @@ public class Main {
 
                 if (shouldStopNow(startTime)) break;
 
+                // ---------------- FIRST 3 PASS NOW FAST ----------------
+
+                for (int i = 0; i < 3; i++) {
+
+                    try {
+
+                        List<WebElement> passNow = driver.findElements(
+                                By.xpath("//span[contains(text(),'Pass now for')]")
+                        );
+
+                        if (passNow.isEmpty()) {
+                            break;
+                        }
+
+                        String text = passNow.get(0).getText();
+                        String number = text.replaceAll("[^0-9]", "");
+
+                        if (!number.isEmpty() && Integer.parseInt(number) <= 10) {
+
+                            // CLICK PASS NOW
+                            click(driver, passNow.get(0));
+
+                            sleep(900);
+
+                            // CLICK YES
+                            List<WebElement> yesBtn = driver.findElements(
+                                    By.xpath("//span[text()='Yes!']")
+                            );
+
+                            if (!yesBtn.isEmpty()) {
+
+                                click(driver, yesBtn.get(0));
+
+                                System.out.println("Fast pass used: " + (i + 1));
+
+                                sleep(900);
+                            }
+                        }
+
+                    } catch (Exception ignored) {}
+                }
+
+                // ---------------- NORMAL OLD ATTACK CODE ----------------
+
                 List<String> attackLinks = new ArrayList<>();
 
                 List<WebElement> attack0 = driver.findElements(By.cssSelector("a[href*='attack0']"));
@@ -85,71 +131,148 @@ public class Main {
                 for (WebElement e : attack2) attackLinks.add(e.getAttribute("href"));
 
                 for (String link : attackLinks) {
+
                     try {
+
                         driver.get(link);
+
                         sleep(600 + random.nextInt(800));
+
                     } catch (Exception ignored) {}
                 }
 
-                List<WebElement> attackBtn = driver.findElements(By.xpath("//span[text()='Attack']"));
+                // ATTACK BUTTON
+
+                List<WebElement> attackBtn = driver.findElements(
+                        By.xpath("//span[text()='Attack']")
+                );
+
                 if (!attackBtn.isEmpty()) {
+
                     try {
-                        attackBtn.get(0).click();
+
+                        click(driver, attackBtn.get(0));
+
                         sleep(1000 + random.nextInt(1000));
+
                     } catch (Exception ignored) {}
                 }
 
-                List<WebElement> goldAttack = driver.findElements(By.xpath("//span[contains(text(),'Attack now for')]"));
+                // GOLD ATTACK
+
+                List<WebElement> goldAttack = driver.findElements(
+                        By.xpath("//span[contains(text(),'Attack now for')]")
+                );
+
                 if (!goldAttack.isEmpty()) {
+
                     try {
+
                         String text = goldAttack.get(0).getText();
                         String number = text.replaceAll("[^0-9]", "");
 
                         if (!number.isEmpty() && Integer.parseInt(number) <= 10) {
-                            goldAttack.get(0).click();
+
+                            click(driver, goldAttack.get(0));
+
                             sleep(800 + random.nextInt(800));
 
-                            List<WebElement> yes = driver.findElements(By.xpath("//span[text()='Yes!']"));
-                            if (!yes.isEmpty()) yes.get(0).click();
+                            List<WebElement> yes = driver.findElements(
+                                    By.xpath("//span[text()='Yes!']")
+                            );
+
+                            if (!yes.isEmpty()) {
+
+                                click(driver, yes.get(0));
+                            }
                         }
+
                     } catch (Exception ignored) {}
                 }
 
-                List<WebElement> nextBtn = driver.findElements(By.xpath("//span[text()='Next']"));
+                // NEXT BUTTON
+
+                List<WebElement> nextBtn = driver.findElements(
+                        By.xpath("//span[text()='Next']")
+                );
+
                 if (!nextBtn.isEmpty()) {
+
                     try {
-                        nextBtn.get(0).click();
+
+                        click(driver, nextBtn.get(0));
+
                         sleep(1000 + random.nextInt(1000));
+
                     } catch (Exception ignored) {}
                 }
 
                 if (shouldStopNow(startTime)) break;
 
                 long elapsed = System.currentTimeMillis() - loopStart;
+
                 long wait = 9000 + random.nextInt(4000) - elapsed;
 
-                if (wait > 0) sleep((int) wait);
+                if (wait > 0) {
+                    sleep((int) wait);
+                }
 
                 driver.navigate().refresh();
             }
 
         } finally {
+
             driver.quit();
         }
     }
 
+    // ---------------- CLICK ----------------
+
+    public static void click(WebDriver driver, WebElement element) {
+
+        try {
+
+            element.click();
+
+        } catch (Exception e) {
+
+            try {
+
+                ((JavascriptExecutor) driver)
+                        .executeScript("arguments[0].click();", element);
+
+            } catch (Exception ignored) {}
+        }
+    }
+
+    // ---------------- STOP CONDITIONS ----------------
+
     public static boolean shouldStopNow(Instant startTime) {
+
         long mins = Duration.between(startTime, Instant.now()).toMinutes();
+
         return mins >= MAX_RUN_MINUTES || isInShutdownWindow();
     }
 
     public static boolean isInShutdownWindow() {
+
         LocalTime now = LocalTime.now(ZoneOffset.UTC);
-        return !now.isBefore(DAILY_STOP_START) || now.isBefore(DAILY_STOP_END);
+
+        return !now.isBefore(DAILY_STOP_START)
+                || now.isBefore(DAILY_STOP_END);
     }
 
+    // ---------------- SLEEP ----------------
+
     public static void sleep(int ms) {
-        try { Thread.sleep(ms); }
-        catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+
+        try {
+
+            Thread.sleep(ms);
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt();
+        }
     }
 }
