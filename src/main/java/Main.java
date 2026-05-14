@@ -12,13 +12,14 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class Main {
 
     private static final int MAX_RUN_MINUTES = 345;
     private static final LocalTime DAILY_STOP_START = LocalTime.of(23, 30);
     private static final LocalTime DAILY_STOP_END = LocalTime.of(1, 0);
+
+    private static final int GOLD_LIMIT = 20;
 
     public static void main(String[] args) {
 
@@ -37,7 +38,6 @@ public class Main {
         options.addArguments("--disable-dev-shm-usage");
 
         WebDriver driver = new ChromeDriver(options);
-        Random random = new Random();
         Instant startTime = Instant.now();
 
         try {
@@ -53,7 +53,6 @@ public class Main {
             driver.findElement(By.cssSelector("input[type='submit']")).click();
 
             sleep(3500);
-
             driver.findElement(By.cssSelector("a.urfin")).click();
             sleep(3000);
 
@@ -61,43 +60,39 @@ public class Main {
 
                 if (shouldStopNow(startTime)) break;
 
-                boolean passUsed = false;
+                boolean actionDone = false;
 
-                // ================= PASS NOW (ONLY ≤ 20 GOLD) =================
+                // ================= PASS NOW =================
                 List<WebElement> passNow = driver.findElements(
                         By.xpath("//*[contains(text(),'Pass now for')]")
                 );
 
                 if (!passNow.isEmpty()) {
 
-                    try {
-                        String text = passNow.get(0).getText();
-                        String number = text.replaceAll("[^0-9]", "");
+                    String text = passNow.get(0).getText();
+                    String number = text.replaceAll("[^0-9]", "");
 
-                        if (!number.isEmpty() && Integer.parseInt(number) <= 20) {
+                    if (!number.isEmpty() && Integer.parseInt(number) <= GOLD_LIMIT) {
 
-                            click(driver, passNow.get(0));
-                            sleep(800);
+                        click(driver, passNow.get(0));
+                        sleep(800);
 
-                            List<WebElement> yes = driver.findElements(
-                                    By.xpath("//span[text()='Yes!']")
-                            );
+                        List<WebElement> yes = driver.findElements(
+                                By.xpath("//span[text()='Yes!']")
+                        );
 
-                            if (!yes.isEmpty()) {
-                                click(driver, yes.get(0));
-                            }
+                        if (!yes.isEmpty()) click(driver, yes.get(0));
 
-                            passUsed = true;
-                            sleep(1500);
-                        }
-
-                    } catch (Exception ignored) {}
+                        sleep(1200);
+                        actionDone = true;
+                    }
                 }
 
-                // ================= WAIT LOGIC =================
-                if (!passUsed) {
+                // ================= WAIT LOGIC (10s × 6 + 1min refresh) =================
+                if (!actionDone) {
 
-                    // fast check cycle (10 sec refresh)
+                    boolean found = false;
+
                     for (int i = 0; i < 6; i++) {
 
                         sleep(10000);
@@ -109,29 +104,28 @@ public class Main {
 
                         if (!passNow.isEmpty()) {
 
-                            try {
-                                String text = passNow.get(0).getText();
-                                String number = text.replaceAll("[^0-9]", "");
+                            String text = passNow.get(0).getText();
+                            String number = text.replaceAll("[^0-9]", "");
 
-                                if (!number.isEmpty() && Integer.parseInt(number) <= 20) {
-                                    click(driver, passNow.get(0));
-                                    sleep(800);
+                            if (!number.isEmpty() && Integer.parseInt(number) <= GOLD_LIMIT) {
 
-                                    List<WebElement> yes = driver.findElements(
-                                            By.xpath("//span[text()='Yes!']")
-                                    );
+                                click(driver, passNow.get(0));
+                                sleep(800);
 
-                                    if (!yes.isEmpty()) click(driver, yes.get(0));
+                                List<WebElement> yes = driver.findElements(
+                                        By.xpath("//span[text()='Yes!']")
+                                );
 
-                                    passUsed = true;
-                                    break;
-                                }
-                            } catch (Exception ignored) {}
+                                if (!yes.isEmpty()) click(driver, yes.get(0));
+
+                                found = true;
+                                actionDone = true;
+                                break;
+                            }
                         }
                     }
 
-                    // slow mode if still nothing
-                    if (!passUsed) {
+                    if (!found) {
                         sleep(60000);
                         driver.navigate().refresh();
                     }
@@ -158,10 +152,10 @@ public class Main {
 
                 } catch (Exception ignored) {}
 
-                // NEXT BUTTON (IMPORTANT FIX)
+                // ================= NEXT BUTTON (IMPORTANT FIX) =================
                 try {
                     List<WebElement> nextBtn = driver.findElements(
-                            By.xpath("//span[text()='Next']")
+                            By.xpath("//a[contains(@href,'/urfin/next/')]")
                     );
 
                     if (!nextBtn.isEmpty()) {
@@ -177,6 +171,7 @@ public class Main {
         }
     }
 
+    // CLICK SAFE
     public static void click(WebDriver driver, WebElement element) {
         try {
             element.click();
