@@ -10,6 +10,12 @@ public class Main {
 
     private static final int MAX_RUN_MINUTES = 345;
 
+    // 🔥 CHANGE THIS TIMEZONE IF NEEDED
+    private static final ZoneId ZONE = ZoneId.of("Asia/Kolkata");
+
+    private static final LocalTime DAILY_STOP_START = LocalTime.of(23, 30);
+    private static final LocalTime DAILY_STOP_END = LocalTime.of(1, 0);
+
     public static void main(String[] args) {
 
         String user = System.getenv("GAME_ID");
@@ -27,7 +33,9 @@ public class Main {
         Instant start = Instant.now();
 
         try {
+
             driver.get("https://elem.cards/login/");
+            sleep(3000);
 
             driver.findElement(By.name("plogin")).sendKeys(user);
             driver.findElement(By.name("ppass")).sendKeys(pass);
@@ -40,59 +48,46 @@ public class Main {
 
             while (true) {
 
-                if (Duration.between(start, Instant.now()).toMinutes() >= MAX_RUN_MINUTES)
-                    break;
+                if (shouldStop(start)) break;
 
-                // ================= PASS NOW (STABLE) =================
+                // ================= PASS NOW =================
                 for (int i = 0; i < 3; i++) {
 
                     try {
-                        List<WebElement> pass = driver.findElements(
-                                By.xpath("//a[contains(@href,'/urfin/auto') or contains(.,'Pass now')]")
+                        List<WebElement> passNowBtn = driver.findElements(
+                                By.xpath("//span[contains(text(),'Pass now for')]")
                         );
 
-                        if (pass.isEmpty()) break;
+                        if (passNowBtn.isEmpty()) break;
 
-                        String text = pass.get(0).getText().replaceAll("[^0-9]", "");
+                        String text = passNowBtn.get(0).getText().replaceAll("[^0-9]", "");
 
                         if (!text.isEmpty() && Integer.parseInt(text) <= 10) {
 
-                            safeClick(driver, pass.get(0));
+                            safeClick(driver, passNowBtn.get(0));
                             sleep(1200);
 
-                            List<WebElement> yes = driver.findElements(
+                            List<WebElement> yesBtn = driver.findElements(
                                     By.xpath("//span[text()='Yes!']")
                             );
 
-                            if (!yes.isEmpty()) {
-                                safeClick(driver, yes.get(0));
+                            if (!yesBtn.isEmpty()) {
+                                safeClick(driver, yesBtn.get(0));
                             }
 
-                            sleep(2500); // stability gap
+                            sleep(2500);
                         }
 
-                    } catch (Exception e) {
+                    } catch (Exception ignored) {
                         sleep(1500);
                     }
                 }
 
-                // ================= ATTACK NOW FIX (IMPORTANT PART) =================
-                try {
-                    List<WebElement> attackNow = driver.findElements(
-                            By.cssSelector("a[href='/urfin/start/']")
-                    );
-
-                    if (!attackNow.isEmpty()) {
-                        safeClick(driver, attackNow.get(0));
-                        sleep(1500);
-                    }
-                } catch (Exception ignored) {}
-
-                // ================= NORMAL ATTACK LINKS =================
+                // ================= ATTACK LINKS =================
                 List<String> links = new ArrayList<>();
 
-                for (String css : new String[]{"attack0", "attack1", "attack2"}) {
-                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='" + css + "']"))) {
+                for (String x : new String[]{"attack0", "attack1", "attack2"}) {
+                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='" + x + "']"))) {
                         links.add(e.getAttribute("href"));
                     }
                 }
@@ -100,11 +95,11 @@ public class Main {
                 for (String l : links) {
                     try {
                         driver.get(l);
-                        sleep(800);
+                        sleep(800 + random.nextInt(500));
                     } catch (Exception ignored) {}
                 }
 
-                // NEXT
+                // ================= NEXT =================
                 try {
                     List<WebElement> next = driver.findElements(By.xpath("//span[text()='Next']"));
                     if (!next.isEmpty()) {
@@ -112,7 +107,7 @@ public class Main {
                     }
                 } catch (Exception ignored) {}
 
-                sleep(2000 + random.nextInt(2000));
+                sleep(2000);
                 driver.navigate().refresh();
             }
 
@@ -121,7 +116,22 @@ public class Main {
         }
     }
 
-    // ================= SAFE CLICK =================
+    // ================= FORCE STOP (FIXED TIMEZONE) =================
+    public static boolean isInShutdownWindow() {
+
+        LocalTime now = LocalTime.now(ZONE);
+
+        return (!now.isBefore(DAILY_STOP_START) || now.isBefore(DAILY_STOP_END));
+    }
+
+    public static boolean shouldStop(Instant start) {
+
+        long mins = Duration.between(start, Instant.now()).toMinutes();
+
+        return mins >= MAX_RUN_MINUTES || isInShutdownWindow();
+    }
+
+    // ================= CLICK =================
     public static void safeClick(WebDriver driver, WebElement el) {
         try {
             el.click();
@@ -132,7 +142,10 @@ public class Main {
     }
 
     public static void sleep(int ms) {
-        try { Thread.sleep(ms); }
-        catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
