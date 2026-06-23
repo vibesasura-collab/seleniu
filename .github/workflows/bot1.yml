@@ -11,44 +11,85 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - game_id_secret: GAME_ID_1
+          - id: 1
+            game_id_secret: GAME_ID_1
             game_password_secret: GAME_PASSWORD_1
-          - game_id_secret: GAME_ID_2
-            game_password_secret: GAME_PASSWORD_2
-          - game_id_secret: GAME_ID_3
-            game_password_secret: GAME_PASSWORD_3
-          - game_id_secret: GAME_ID_4
-            game_password_secret: GAME_PASSWORD_4
-          - game_id_secret: GAME_ID_5
-            game_password_secret: GAME_PASSWORD_5
-          - game_id_secret: GAME_ID_6
+
+          - id: 2
+            game_id_secret: GAME_ID_6
             game_password_secret: GAME_PASSWORD_6
-          - game_id_secret: GAME_ID_8
-            game_password_secret: GAME_PASSWORD_8
-          - game_id_secret: GAME_ID_11
-            game_password_secret: GAME_PASSWORD_11
-          - game_id_secret: GAME_ID_14
-            game_password_secret: GAME_PASSWORD_14
-          - game_id_secret: GAME_ID_19
-            game_password_secret: GAME_PASSWORD_19
-          - game_id_secret: GAME_ID_20
-            game_password_secret: GAME_PASSWORD_20
-          - game_id_secret: GAME_ID_25
-            game_password_secret: GAME_PASSWORD_25
-          - game_id_secret: GAME_ID_29
-            game_password_secret: GAME_PASSWORD_29
-          - game_id_secret: GAME_ID_30
-            game_password_secret: GAME_PASSWORD_30
-          - game_id_secret: GAME_ID_31
-            game_password_secret: GAME_PASSWORD_31
-          - game_id_secret: GAME_ID_34
-            game_password_secret: GAME_PASSWORD_34
-          - game_id_secret: GAME_ID_35
-            game_password_secret: GAME_PASSWORD_35
-          - game_id_secret: GAME_ID_37
+
+          - id: 3
+            game_id_secret: GAME_ID_4
+            game_password_secret: GAME_PASSWORD_4
+
+          - id: 4
+            game_id_secret: GAME_ID_2
+            game_password_secret: GAME_PASSWORD_2
+
+          - id: 5
+            game_id_secret: GAME_ID_5
+            game_password_secret: GAME_PASSWORD_5
+
+          - id: 6
+            game_id_secret: GAME_ID_3
+            game_password_secret: GAME_PASSWORD_3
+
+          - id: 7
+            game_id_secret: GAME_ID_37
             game_password_secret: GAME_PASSWORD_37
-          - game_id_secret: GAME_ID_39
+
+          - id: 8
+            game_id_secret: GAME_ID_11
+            game_password_secret: GAME_PASSWORD_11
+
+          - id: 9
+            game_id_secret: GAME_ID_29
+            game_password_secret: GAME_PASSWORD_29
+
+          - id: 10
+            game_id_secret: GAME_ID_34
+            game_password_secret: GAME_PASSWORD_34
+
+          - id: 11
+            game_id_secret: GAME_ID_30
+            game_password_secret: GAME_PASSWORD_30
+
+          - id: 12
+            game_id_secret: GAME_ID_35
+            game_password_secret: GAME_PASSWORD_35
+
+          - id: 13
+            game_id_secret: GAME_ID_20
+            game_password_secret: GAME_PASSWORD_20
+
+          - id: 14
+            game_id_secret: GAME_ID_39
             game_password_secret: GAME_PASSWORD_39
+
+          - id: 15
+            game_id_secret: GAME_ID_8
+            game_password_secret: GAME_PASSWORD_8
+
+          - id: 16
+            game_id_secret: GAME_ID_25
+            game_password_secret: GAME_PASSWORD_25
+
+          - id: 17
+            game_id_secret: GAME_ID_19
+            game_password_secret: GAME_PASSWORD_19
+
+          - id: 18
+            game_id_secret: GAME_ID_14
+            game_password_secret: GAME_PASSWORD_14
+
+          - id: 19
+            game_id_secret: GAME_ID_28
+            game_password_secret: GAME_PASSWORD_28
+
+          - id: 20
+            game_id_secret: GAME_ID_31
+            game_password_secret: GAME_PASSWORD_31
 
     steps:
       - uses: actions/checkout@v3
