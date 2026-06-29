@@ -52,7 +52,11 @@ public class Main {
             driver.findElement(By.name("ppass")).sendKeys(pass);
             driver.findElement(By.cssSelector("input[type='submit']")).click();
 
-                private static void claimDailyReward() {
+              
+
+            sleep(3500);
+            driver.findElement(By.cssSelector("a.urfin")).click();
+              private static void claimDailyReward() {
 
         try {
 
@@ -94,10 +98,7 @@ public class Main {
 
             e.printStackTrace();
         }
-    }
-
-            sleep(3500);
-            driver.findElement(By.cssSelector("a.urfin")).click();
+                }
             sleep(3000);
 
             while (true) {
