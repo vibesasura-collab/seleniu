@@ -52,6 +52,50 @@ public class Main {
             driver.findElement(By.name("ppass")).sendKeys(pass);
             driver.findElement(By.cssSelector("input[type='submit']")).click();
 
+                private static void claimDailyReward() {
+
+        try {
+
+            // Open main page
+            driver.get("https://elem.cards/");
+
+            sleep(3000);
+
+            // Open reward page
+            driver.get("https://elem.cards/dailyreward/");
+
+            sleep(2000);
+
+            List<WebElement> rewards = driver.findElements(
+                    By.cssSelector("a[href*='/dailyreward/tnx/']")
+            );
+
+            if (rewards.isEmpty()) {
+
+                System.out.println("No daily reward available.");
+
+                return;
+            }
+
+            String rewardUrl =
+                    rewards.get(0).getAttribute("href");
+
+            System.out.println("Opening reward: " + rewardUrl);
+
+            driver.get(rewardUrl);
+
+            sleep(3000);
+
+            System.out.println("Daily reward claimed ✔");
+
+        } catch (Exception e) {
+
+            System.out.println("Daily reward failed.");
+
+            e.printStackTrace();
+        }
+    }
+
             sleep(3500);
             driver.findElement(By.cssSelector("a.urfin")).click();
             sleep(3000);
