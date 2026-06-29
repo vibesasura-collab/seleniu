@@ -5,7 +5,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import io.github.bonigarcia.wdm.WebDriverManager;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -14,120 +13,70 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
-
     private static final int MAX_RUN_MINUTES = 345;
     private static final LocalTime DAILY_STOP_START = LocalTime.of(23, 30);
     private static final LocalTime DAILY_STOP_END = LocalTime.of(1, 0);
-
     private static final int GOLD_LIMIT = 20;
 
     public static void main(String[] args) {
-
         String user = System.getenv("GAME_ID");
         String pass = System.getenv("GAME_PASSWORD");
-
+        
         if (user == null || pass == null) {
             throw new RuntimeException("Secrets missing");
         }
 
         WebDriverManager.chromedriver().setup();
-
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
-
+        
         WebDriver driver = new ChromeDriver(options);
         Instant startTime = Instant.now();
 
         try {
-
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
 
-            // LOGIN
+            // ================= LOGIN =================
             driver.get("https://elem.cards/login/");
             sleep(2500);
-
             driver.findElement(By.name("plogin")).sendKeys(user);
             driver.findElement(By.name("ppass")).sendKeys(pass);
             driver.findElement(By.cssSelector("input[type='submit']")).click();
-
-              
-
             sleep(3500);
             driver.findElement(By.cssSelector("a.urfin")).click();
-              private static void claimDailyReward() {
-
-        try {
-
-            // Open main page
-            driver.get("https://elem.cards/");
-
             sleep(3000);
 
-            // Open reward page
-            driver.get("https://elem.cards/dailyreward/");
-
-            sleep(2000);
-
-            List<WebElement> rewards = driver.findElements(
-                    By.cssSelector("a[href*='/dailyreward/tnx/']")
-            );
-
-            if (rewards.isEmpty()) {
-
-                System.out.println("No daily reward available.");
-
-                return;
-            }
-
-            String rewardUrl =
-                    rewards.get(0).getAttribute("href");
-
-            System.out.println("Opening reward: " + rewardUrl);
-
-            driver.get(rewardUrl);
-
+            // ================= CLAIM DAILY REWARD =================
+            claimDailyReward(driver);
             sleep(3000);
 
-            System.out.println("Daily reward claimed ✔");
-
-        } catch (Exception e) {
-
-            System.out.println("Daily reward failed.");
-
-            e.printStackTrace();
-        }
-                }
-            sleep(3000);
-
+            // ================= MAIN LOOP =================
             while (true) {
-
-                if (shouldStopNow(startTime)) break;
-
+                if (shouldStopNow(startTime)) {
+                    break;
+                }
+                
                 boolean actionDone = false;
 
                 // ================= PASS NOW =================
                 List<WebElement> passNow = driver.findElements(
-                        By.xpath("//*[contains(text(),'Pass now for')]")
+                    By.xpath("//*[contains(text(),'Pass now for')]")
                 );
-
+                
                 if (!passNow.isEmpty()) {
-
                     String text = passNow.get(0).getText();
                     String number = text.replaceAll("[^0-9]", "");
-
                     if (!number.isEmpty() && Integer.parseInt(number) <= GOLD_LIMIT) {
-
                         click(driver, passNow.get(0));
                         sleep(800);
-
                         List<WebElement> yes = driver.findElements(
-                                By.xpath("//span[text()='Yes!']")
+                            By.xpath("//span[text()='Yes!']")
                         );
-
-                        if (!yes.isEmpty()) click(driver, yes.get(0));
-
+                        if (!yes.isEmpty()) {
+                            click(driver, yes.get(0));
+                        }
                         sleep(1200);
                         actionDone = true;
                     }
@@ -135,41 +84,31 @@ public class Main {
 
                 // ================= WAIT LOGIC (10s × 6 + 1min refresh) =================
                 if (!actionDone) {
-
                     boolean found = false;
-
                     for (int i = 0; i < 6; i++) {
-
                         sleep(10000);
                         driver.navigate().refresh();
-
                         passNow = driver.findElements(
-                                By.xpath("//*[contains(text(),'Pass now for')]")
+                            By.xpath("//*[contains(text(),'Pass now for')]")
                         );
-
                         if (!passNow.isEmpty()) {
-
                             String text = passNow.get(0).getText();
                             String number = text.replaceAll("[^0-9]", "");
-
                             if (!number.isEmpty() && Integer.parseInt(number) <= GOLD_LIMIT) {
-
                                 click(driver, passNow.get(0));
                                 sleep(800);
-
                                 List<WebElement> yes = driver.findElements(
-                                        By.xpath("//span[text()='Yes!']")
+                                    By.xpath("//span[text()='Yes!']")
                                 );
-
-                                if (!yes.isEmpty()) click(driver, yes.get(0));
-
+                                if (!yes.isEmpty()) {
+                                    click(driver, yes.get(0));
+                                }
                                 found = true;
                                 actionDone = true;
                                 break;
                             }
                         }
                     }
-
                     if (!found) {
                         sleep(60000);
                         driver.navigate().refresh();
@@ -178,41 +117,66 @@ public class Main {
 
                 // ================= ATTACK FLOW =================
                 try {
-
                     List<String> links = new ArrayList<>();
-
-                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack0']")))
+                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack0']"))) {
                         links.add(e.getAttribute("href"));
-
-                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack1']")))
+                    }
+                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack1']"))) {
                         links.add(e.getAttribute("href"));
-
-                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack2']")))
+                    }
+                    for (WebElement e : driver.findElements(By.cssSelector("a[href*='attack2']"))) {
                         links.add(e.getAttribute("href"));
-
+                    }
                     for (String link : links) {
                         driver.get(link);
                         sleep(500);
                     }
-
                 } catch (Exception ignored) {}
 
-                // ================= NEXT BUTTON (IMPORTANT FIX) =================
+                // ================= NEXT BUTTON =================
                 try {
                     List<WebElement> nextBtn = driver.findElements(
-                            By.xpath("//a[contains(@href,'/urfin/next/')]")
+                        By.xpath("//a[contains(@href,'/urfin/next/')]")
                     );
-
                     if (!nextBtn.isEmpty()) {
                         click(driver, nextBtn.get(0));
                         sleep(800);
                     }
                 } catch (Exception ignored) {}
-
             }
-
         } finally {
             driver.quit();
+        }
+    }
+
+    // Moved outside of main() and updated to accept the active driver instance
+    private static void claimDailyReward(WebDriver driver) {
+        try {
+            // Open main page
+            driver.get("https://elem.cards/");
+            sleep(3000);
+            
+            // Open reward page
+            driver.get("https://elem.cards/dailyreward/");
+            sleep(2000);
+            
+            List<WebElement> rewards = driver.findElements(
+                By.cssSelector("a[href*='/dailyreward/tnx/']")
+            );
+            
+            if (rewards.isEmpty()) {
+                System.out.println("No daily reward available.");
+                return;
+            }
+            
+            String rewardUrl = rewards.get(0).getAttribute("href");
+            System.out.println("Opening reward: " + rewardUrl);
+            driver.get(rewardUrl);
+            sleep(3000);
+            System.out.println("Daily reward claimed ✔");
+        } catch (Exception e) {
+            System.out.println("Daily reward failed.");
+            e.printStackTrace();
         }
     }
 
@@ -222,7 +186,7 @@ public class Main {
             element.click();
         } catch (Exception e) {
             ((JavascriptExecutor) driver)
-                    .executeScript("arguments[0].click();", element);
+                .executeScript("arguments[0].click();", element); // JavascriptExecutor injection for unclickable elements
         }
     }
 
@@ -233,8 +197,7 @@ public class Main {
 
     public static boolean isInShutdownWindow() {
         LocalTime now = LocalTime.now(ZoneOffset.UTC);
-        return !now.isBefore(DAILY_STOP_START)
-                || now.isBefore(DAILY_STOP_END);
+        return !now.isBefore(DAILY_STOP_START) || now.isBefore(DAILY_STOP_END);
     }
 
     public static void sleep(int ms) {
