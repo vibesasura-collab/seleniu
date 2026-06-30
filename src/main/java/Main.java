@@ -5,7 +5,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import io.github.bonigarcia.wdm.WebDriverManager;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -42,6 +41,7 @@ public class Main {
             // ================= LOGIN =================
             driver.get("https://elem.cards/login/");
             sleep(2500);
+
             driver.findElement(By.name("plogin")).sendKeys(user);
             driver.findElement(By.name("ppass")).sendKeys(pass);
             driver.findElement(By.cssSelector("input[type='submit']")).click();
@@ -54,10 +54,6 @@ public class Main {
                 sleep(3000);
             }
 
-            // ================= CLAIM DAILY REWARD =================
-            claimDailyReward(driver);
-            sleep(3000);
-
             // ================= MAIN LOOP =================
             while (true) {
                 if (shouldStopNow(startTime)) {
@@ -69,7 +65,7 @@ public class Main {
 
                 // ================= PASS NOW =================
                 List<WebElement> passNow = driver.findElements(
-                        By.xpath("//*[contains(text(),'Pass now for')]")
+                    By.xpath("//*[contains(text(),'Pass now for')]")
                 );
                 if (!passNow.isEmpty()) {
                     try {
@@ -79,7 +75,7 @@ public class Main {
                             click(driver, passNow.get(0));
                             sleep(800);
                             List<WebElement> yes = driver.findElements(
-                                    By.xpath("//span[text()='Yes!']")
+                                By.xpath("//span[text()='Yes!']")
                             );
                             if (!yes.isEmpty()) {
                                 click(driver, yes.get(0));
@@ -97,7 +93,7 @@ public class Main {
                         sleep(10000);
                         driver.navigate().refresh();
                         passNow = driver.findElements(
-                                By.xpath("//*[contains(text(),'Pass now for')]")
+                            By.xpath("//*[contains(text(),'Pass now for')]")
                         );
                         if (!passNow.isEmpty()) {
                             try {
@@ -107,7 +103,7 @@ public class Main {
                                     click(driver, passNow.get(0));
                                     sleep(800);
                                     List<WebElement> yes = driver.findElements(
-                                            By.xpath("//span[text()='Yes!']")
+                                        By.xpath("//span[text()='Yes!']")
                                     );
                                     if (!yes.isEmpty()) {
                                         click(driver, yes.get(0));
@@ -119,6 +115,7 @@ public class Main {
                             } catch (Exception ignored) {}
                         }
                     }
+
                     if (!found) {
                         sleep(60000);
                         driver.navigate().refresh();
@@ -146,7 +143,7 @@ public class Main {
                 // ================= NEXT BUTTON =================
                 try {
                     List<WebElement> nextBtn = driver.findElements(
-                            By.xpath("//a[contains(@href,'/urfin/next/')]")
+                        By.xpath("//a[contains(@href,'/urfin/next/')]")
                     );
                     if (!nextBtn.isEmpty()) {
                         click(driver, nextBtn.get(0));
@@ -154,38 +151,10 @@ public class Main {
                     }
                 } catch (Exception ignored) {}
             }
+
         } finally {
             driver.quit();
             System.out.println("Driver closed safely.");
-        }
-    }
-
-    private static void claimDailyReward(WebDriver driver) {
-        try {
-            System.out.println("Navigating to daily reward engine...");
-            driver.get("https://elem.cards/dailyreward/");
-            sleep(3000);
-
-            // Safe fallback locator looking for tnx/ link or fallback button containers
-            List<WebElement> rewards = driver.findElements(
-                    By.cssSelector("a[href*='/dailyreward/tnx/']")
-            );
-
-            if (rewards.isEmpty()) {
-                System.out.println("No claimable daily reward found on the target interface page.");
-                return;
-            }
-
-            String rewardUrl = rewards.get(0).getAttribute("href");
-            if (rewardUrl != null && !rewardUrl.isEmpty()) {
-                System.out.println("Opening reward claim sequence: " + rewardUrl);
-                driver.get(rewardUrl);
-                sleep(3000);
-                System.out.println("Daily reward processed ✔");
-            }
-        } catch (Exception e) {
-            System.out.println("⚠️ Attention: Daily reward element interaction failure.");
-            e.printStackTrace();
         }
     }
 
@@ -193,7 +162,6 @@ public class Main {
         try {
             element.click();
         } catch (Exception e) {
-            // Safe fallback interaction strategy utilizing JavaScript execution injection
             try {
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
             } catch (Exception ignored) {}
@@ -207,8 +175,6 @@ public class Main {
 
     public static boolean isInShutdownWindow() {
         LocalTime now = LocalTime.now(ZoneOffset.UTC);
-        
-        // Midnight-spanning validation logic condition checks
         if (DAILY_STOP_START.isAfter(DAILY_STOP_END)) {
             return !now.isBefore(DAILY_STOP_START) || now.isBefore(DAILY_STOP_END);
         } else {
