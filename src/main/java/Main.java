@@ -7,8 +7,6 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -16,9 +14,6 @@ import java.util.Random;
 public class Main {
 
     private static final int MAX_RUN_MINUTES = 345;
-    private static final LocalTime DAILY_STOP_START = LocalTime.of(23, 30);
-    private static final LocalTime DAILY_STOP_END = LocalTime.of(1, 0);
-
     private static final boolean TODAY_OFF = false;
 
     public static void main(String[] args) {
@@ -35,11 +30,6 @@ public class Main {
             throw new RuntimeException("GAME_ID or GAME_PASSWORD not found in GitHub Secrets.");
         }
 
-        if (isInShutdownWindow()) {
-            System.out.println("Inside daily shutdown window (23:30-01:00 GMT). Exiting.");
-            return;
-        }
-
         WebDriverManager.chromedriver().setup();
 
         ChromeOptions options = new ChromeOptions();
@@ -48,6 +38,7 @@ public class Main {
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
         options.addArguments("--window-size=1920,1080");
+        options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
         WebDriver driver = new ChromeDriver(options);
         Random random = new Random();
@@ -59,21 +50,46 @@ public class Main {
             driver.get("https://elem.cards/login/");
             sleep(2000);
 
-            driver.findElement(By.name("plogin")).sendKeys(user);
-            driver.findElement(By.name("ppass")).sendKeys(pass);
-            driver.findElement(By.cssSelector("input[type='submit']")).click();
+            // Crash-proof login block
+            List<WebElement> userInputs = driver.findElements(By.name("plogin"));
+            List<WebElement> passInputs = driver.findElements(By.name("ppass"));
+            List<WebElement> submitBtns = driver.findElements(By.cssSelector("input[type='submit']"));
 
-            sleep(4000);
+            if (!userInputs.isEmpty() && !passInputs.isEmpty() && !submitBtns.isEmpty()) {
+                userInputs.get(0).sendKeys(user);
+                passInputs.get(0).sendKeys(pass);
+                submitBtns.get(0).click();
+                sleep(4000);
+            } else {
+                System.out.println("Could not find login fields. Exiting.");
+                return;
+            }
 
-            driver.findElement(By.cssSelector("a.urfin")).click();
-            sleep(3000);
+            // Crash-proof urf.in click with retries
+            boolean navigated = false;
+            for (int attempt = 1; attempt <= 5; attempt++) {
+                List<WebElement> urfinLinks = driver.findElements(By.cssSelector("a.urfin"));
+                if (!urfinLinks.isEmpty()) {
+                    urfinLinks.get(0).click();
+                    navigated = true;
+                    sleep(3000);
+                    break;
+                }
+                sleep(2000);
+            }
+
+            if (!navigated) {
+                System.out.println("Could not find a.urfin link. Exiting.");
+                return;
+            }
+
+            int consecutiveIdle = 0; // Tracks consecutive loops with no actions
 
             while (true) {
-
                 long loopStart = System.currentTimeMillis();
 
                 if (shouldStopNow(startTime)) {
-                    System.out.println("Stopping now due to runtime limit or daily shutdown window.");
+                    System.out.println("Stopping now due to runtime limit.");
                     break;
                 }
 
@@ -82,7 +98,6 @@ public class Main {
                 // -------- Collect attack links first --------
 
                 List<String> attackLinks = new ArrayList<>();
-
                 List<WebElement> attack0 = driver.findElements(By.cssSelector("a[href*='attack0']"));
                 List<WebElement> attack1 = driver.findElements(By.cssSelector("a[href*='attack1']"));
                 List<WebElement> attack2 = driver.findElements(By.cssSelector("a[href*='attack2']"));
@@ -93,16 +108,12 @@ public class Main {
                         " | attack2: " + attack2.size()
                 );
 
-                for (WebElement e : attack0) {
-                    attackLinks.add(e.getAttribute("href"));
-                }
+                for (WebElement e : attack0) attackLinks.add(e.getAttribute("href"));
+                for (WebElement e : attack1) attackLinks.add(e.getAttribute("href"));
+                for (WebElement e : attack2) attackLinks.add(e.getAttribute("href"));
 
-                for (WebElement e : attack1) {
-                    attackLinks.add(e.getAttribute("href"));
-                }
-
-                for (WebElement e : attack2) {
-                    attackLinks.add(e.getAttribute("href"));
+                if (!attackLinks.isEmpty()) {
+                    actionPerformed = true;
                 }
 
                 // -------- Visit each attack --------
@@ -138,7 +149,7 @@ public class Main {
                         if (!number.isEmpty()) {
                             int cost = Integer.parseInt(number);
 
-                            if (cost <= 20) {
+                            if (cost <= 10) {
                                 goldAttack.get(0).click();
                                 sleep(1200);
 
@@ -167,17 +178,37 @@ public class Main {
                 }
 
                 if (shouldStopNow(startTime)) {
-                    System.out.println("Stopping now due to runtime limit or daily shutdown window.");
+                    System.out.println("Stopping now due to runtime limit.");
                     break;
                 }
 
-                // -------- Maintain exact 10-second loop --------
+                // -------- Dynamic Idle & Sleep Logic --------
 
-                long elapsed = System.currentTimeMillis() - loopStart;
-                long remaining = 10000 - elapsed;
+                if (actionPerformed) {
+                    consecutiveIdle = 0; // Reset counter if we did something
+                    long elapsed = System.currentTimeMillis() - loopStart;
+                    long remaining = 10000 - elapsed;
 
-                if (remaining > 0) {
-                    sleep((int) remaining);
+                    if (remaining > 0) {
+                        sleep((int) remaining);
+                    }
+                } else {
+                    consecutiveIdle++; // Increase counter if nothing was found
+                    int sleepTimeMs;
+
+                    if (consecutiveIdle >= 2) {
+                        System.out.println("No targets found twice. Sleeping 15-16 minutes...");
+                        int minMs = 20 * 60 * 1000;
+                        int maxMs = 25 * 60 * 1000;
+                        sleepTimeMs = random.nextInt(maxMs - minMs + 1) + minMs;
+                    } else {
+                        System.out.println("No targets or cost > 20. Sleeping 5-6 minutes...");
+                        int minMs = 11 * 60 * 1000;
+                        int maxMs = 16 * 60 * 1000;
+                        sleepTimeMs = random.nextInt(maxMs - minMs + 1) + minMs;
+                    }
+
+                    sleep(sleepTimeMs);
                 }
 
                 driver.navigate().refresh();
@@ -186,18 +217,15 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            driver.quit();
+            if (driver != null) {
+                driver.quit();
+            }
         }
     }
 
     public static boolean shouldStopNow(Instant startTime) {
         long elapsedMinutes = Duration.between(startTime, Instant.now()).toMinutes();
-        return elapsedMinutes >= MAX_RUN_MINUTES || isInShutdownWindow();
-    }
-
-    public static boolean isInShutdownWindow() {
-        LocalTime now = LocalTime.now(ZoneOffset.UTC);
-        return !now.isBefore(DAILY_STOP_START) || now.isBefore(DAILY_STOP_END);
+        return elapsedMinutes >= MAX_RUN_MINUTES;
     }
 
     public static void sleep(int ms) {
