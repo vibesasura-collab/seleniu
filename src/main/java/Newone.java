@@ -1,19 +1,22 @@
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.By;
+import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import io.github.bonigarcia.wdm.WebDriverManager;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 
 public class Newone {
 
     private static final int MAX_RUN_MINUTES = 345;
     private static final boolean TODAY_OFF = false;
+    private static final int LOOP_INTERVAL_MS = 2000; // 2-second poll rate
 
     public static void main(String[] args) {
 
@@ -39,17 +42,24 @@ public class Newone {
         options.addArguments("--window-size=1920,1080");
         options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
+        // Speed Optimization 1: Fast Page Load Strategy (don't wait for full image/asset loads)
+        options.setPageLoadStrategy(PageLoadStrategy.EAGER);
+
+        // Speed Optimization 2: Disable image loading to save network bandwidth and DOM rendering time
+        Map<String, Object> prefs = new HashMap<>();
+        prefs.put("profile.managed_default_content_settings.images", 2);
+        options.setExperimentalOption("prefs", prefs);
+
         WebDriver driver = new ChromeDriver(options);
-        Random random = new Random();
         Instant startTime = Instant.now();
 
         try {
-            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+            // Speed Optimization 3: Minimal implicit wait so missing elements return immediately
+            driver.manage().timeouts().implicitlyWait(Duration.ofMillis(300));
 
             driver.get("https://elem.cards/login/");
-            sleep(2000);
 
-            // Crash-proof login block
+            // Login Block
             List<WebElement> userInputs = driver.findElements(By.name("plogin"));
             List<WebElement> passInputs = driver.findElements(By.name("ppass"));
             List<WebElement> submitBtns = driver.findElements(By.cssSelector("input[type='submit']"));
@@ -58,23 +68,23 @@ public class Newone {
                 userInputs.get(0).sendKeys(user);
                 passInputs.get(0).sendKeys(pass);
                 submitBtns.get(0).click();
-                sleep(4000);
+                sleep(1000);
             } else {
                 System.out.println("Could not find login fields. Exiting.");
                 return;
             }
 
-            // Navigate to Invasion section (a.urfin)
+            // Navigate to Invasion section
             boolean navigated = false;
             for (int attempt = 1; attempt <= 5; attempt++) {
                 List<WebElement> urfinLinks = driver.findElements(By.cssSelector("a.urfin, a[href*='/urfin/']"));
                 if (!urfinLinks.isEmpty()) {
                     urfinLinks.get(0).click();
                     navigated = true;
-                    sleep(3000);
+                    sleep(1000);
                     break;
                 }
-                sleep(2000);
+                sleep(500);
             }
 
             if (!navigated) {
@@ -82,8 +92,7 @@ public class Newone {
                 return;
             }
 
-            int consecutiveIdle = 0;
-
+            // Fast Execution Loop - Executes every 2 seconds
             while (true) {
                 long loopStart = System.currentTimeMillis();
 
@@ -91,8 +100,6 @@ public class Newone {
                     System.out.println("Stopping now due to runtime limit.");
                     break;
                 }
-
-                boolean actionPerformed = false;
 
                 // -------- 1. Check Pass Now Gold Cost (<= 40) --------
                 List<WebElement> passNowBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/auto/')]"));
@@ -104,24 +111,19 @@ public class Newone {
 
                         if (!number.isEmpty()) {
                             int cost = Integer.parseInt(number);
-                            System.out.println("Found 'Pass now' button with cost: " + cost + " Gold");
 
-                            if (cost <= 40) {
+                            if (cost <= 90) {
                                 passBtn.click();
                                 System.out.println("Clicked 'Pass now for " + cost + "'");
-                                sleep(1500);
+                                sleep(300);
 
-                                // Confirm with 'Yes!'
+                                // Fast Confirm 'Yes!'
                                 List<WebElement> yesBtns = driver.findElements(By.xpath("//a[contains(@href, 'confirmed')] | //span[text()='Yes!']"));
                                 if (!yesBtns.isEmpty()) {
                                     yesBtns.get(0).click();
                                     System.out.println("Clicked 'Yes!' confirmation");
-                                    sleep(1500);
+                                    sleep(300);
                                 }
-
-                                actionPerformed = true;
-                            } else {
-                                System.out.println("Cost " + cost + " exceeds limit of 40 Gold. Skipping pass.");
                             }
                         }
                     } catch (Exception e) {
@@ -135,46 +137,21 @@ public class Newone {
                     try {
                         nextBtns.get(0).click();
                         System.out.println("Clicked 'Next' button.");
-                        actionPerformed = true;
-                        sleep(1500);
+                        sleep(300);
                     } catch (Exception e) {
                         System.out.println("Error clicking Next button: " + e.getMessage());
                     }
                 }
 
-                if (shouldStopNow(startTime)) {
-                    System.out.println("Stopping now due to runtime limit.");
-                    break;
-                }
-
-                // -------- Dynamic Sleep Logic --------
-                if (actionPerformed) {
-                    consecutiveIdle = 0;
-                    long elapsed = System.currentTimeMillis() - loopStart;
-                    long remaining = 4000 - elapsed;
-                    if (remaining > 0) {
-                        sleep((int) remaining);
-                    }
-                } else {
-                    consecutiveIdle++;
-                    int sleepTimeMs;
-
-                    if (consecutiveIdle >= 2) {
-                        System.out.println("No actions available twice. Sleeping 15-20 minutes...");
-                        int minMs = 15 * 60 * 1000;
-                        int maxMs = 20 * 60 * 1000;
-                        sleepTimeMs = random.nextInt(maxMs - minMs + 1) + minMs;
-                    } else {
-                        System.out.println("No action taken or cost > 40. Sleeping 5-8 minutes...");
-                        int minMs = 5 * 60 * 1000;
-                        int maxMs = 8 * 60 * 1000;
-                        sleepTimeMs = random.nextInt(maxMs - minMs + 1) + minMs;
-                    }
-
-                    sleep(sleepTimeMs);
-                }
-
+                // Refresh page to load updated state instantly
                 driver.navigate().refresh();
+
+                // Maintain strictly 2-second cycle rate
+                long elapsed = System.currentTimeMillis() - loopStart;
+                long sleepTime = LOOP_INTERVAL_MS - elapsed;
+                if (sleepTime > 0) {
+                    sleep((int) sleepTime);
+                }
             }
 
         } catch (Exception e) {
@@ -187,8 +164,7 @@ public class Newone {
     }
 
     public static boolean shouldStopNow(Instant startTime) {
-        long elapsedMinutes = Duration.between(startTime, Instant.now()).toMinutes();
-        return elapsedMinutes >= MAX_RUN_MINUTES;
+        return Duration.between(startTime, Instant.now()).toMinutes() >= MAX_RUN_MINUTES;
     }
 
     public static void sleep(int ms) {
