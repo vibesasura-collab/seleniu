@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 
-public class InvasionBot {
+public class Newone {
 
     private static final int MAX_RUN_MINUTES = 345;
     private static final boolean TODAY_OFF = false;
