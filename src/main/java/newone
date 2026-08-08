@@ -1,0 +1,201 @@
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import io.github.bonigarcia.wdm.WebDriverManager;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Random;
+
+public class InvasionBot {
+
+    private static final int MAX_RUN_MINUTES = 345;
+    private static final boolean TODAY_OFF = false;
+
+    public static void main(String[] args) {
+
+        if (TODAY_OFF) {
+            System.out.println("Bot OFF today. Exiting.");
+            return;
+        }
+
+        String user = System.getenv("GAME_ID");
+        String pass = System.getenv("GAME_PASSWORD");
+
+        if (user == null || user.isEmpty() || pass == null || pass.isEmpty()) {
+            throw new RuntimeException("GAME_ID or GAME_PASSWORD not found in GitHub Secrets.");
+        }
+
+        WebDriverManager.chromedriver().setup();
+
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--window-size=1920,1080");
+        options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+
+        WebDriver driver = new ChromeDriver(options);
+        Random random = new Random();
+        Instant startTime = Instant.now();
+
+        try {
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
+
+            driver.get("https://elem.cards/login/");
+            sleep(2000);
+
+            // Crash-proof login block
+            List<WebElement> userInputs = driver.findElements(By.name("plogin"));
+            List<WebElement> passInputs = driver.findElements(By.name("ppass"));
+            List<WebElement> submitBtns = driver.findElements(By.cssSelector("input[type='submit']"));
+
+            if (!userInputs.isEmpty() && !passInputs.isEmpty() && !submitBtns.isEmpty()) {
+                userInputs.get(0).sendKeys(user);
+                passInputs.get(0).sendKeys(pass);
+                submitBtns.get(0).click();
+                sleep(4000);
+            } else {
+                System.out.println("Could not find login fields. Exiting.");
+                return;
+            }
+
+            // Navigate to Invasion section (a.urfin)
+            boolean navigated = false;
+            for (int attempt = 1; attempt <= 5; attempt++) {
+                List<WebElement> urfinLinks = driver.findElements(By.cssSelector("a.urfin, a[href*='/urfin/']"));
+                if (!urfinLinks.isEmpty()) {
+                    urfinLinks.get(0).click();
+                    navigated = true;
+                    sleep(3000);
+                    break;
+                }
+                sleep(2000);
+            }
+
+            if (!navigated) {
+                System.out.println("Could not find Invasion link. Exiting.");
+                return;
+            }
+
+            int consecutiveIdle = 0;
+
+            while (true) {
+                long loopStart = System.currentTimeMillis();
+
+                if (shouldStopNow(startTime)) {
+                    System.out.println("Stopping now due to runtime limit.");
+                    break;
+                }
+
+                boolean actionPerformed = false;
+
+                // -------- 1. Check Pass Now Gold Cost (<= 40) --------
+                List<WebElement> passNowBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/auto/')]"));
+                if (!passNowBtns.isEmpty()) {
+                    try {
+                        WebElement passBtn = passNowBtns.get(0);
+                        String text = passBtn.getText();
+                        String number = text.replaceAll("[^0-9]", "");
+
+                        if (!number.isEmpty()) {
+                            int cost = Integer.parseInt(number);
+                            System.out.println("Found 'Pass now' button with cost: " + cost + " Gold");
+
+                            if (cost <= 40) {
+                                passBtn.click();
+                                System.out.println("Clicked 'Pass now for " + cost + "'");
+                                sleep(1500);
+
+                                // Confirm with 'Yes!'
+                                List<WebElement> yesBtns = driver.findElements(By.xpath("//a[contains(@href, 'confirmed')] | //span[text()='Yes!']"));
+                                if (!yesBtns.isEmpty()) {
+                                    yesBtns.get(0).click();
+                                    System.out.println("Clicked 'Yes!' confirmation");
+                                    sleep(1500);
+                                }
+
+                                actionPerformed = true;
+                            } else {
+                                System.out.println("Cost " + cost + " exceeds limit of 40 Gold. Skipping pass.");
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Error processing Pass now: " + e.getMessage());
+                    }
+                }
+
+                // -------- 2. Check Next Button --------
+                List<WebElement> nextBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/')]//span[text()='Next'] | //span[text()='Next']"));
+                if (!nextBtns.isEmpty()) {
+                    try {
+                        nextBtns.get(0).click();
+                        System.out.println("Clicked 'Next' button.");
+                        actionPerformed = true;
+                        sleep(1500);
+                    } catch (Exception e) {
+                        System.out.println("Error clicking Next button: " + e.getMessage());
+                    }
+                }
+
+                if (shouldStopNow(startTime)) {
+                    System.out.println("Stopping now due to runtime limit.");
+                    break;
+                }
+
+                // -------- Dynamic Sleep Logic --------
+                if (actionPerformed) {
+                    consecutiveIdle = 0;
+                    long elapsed = System.currentTimeMillis() - loopStart;
+                    long remaining = 4000 - elapsed;
+                    if (remaining > 0) {
+                        sleep((int) remaining);
+                    }
+                } else {
+                    consecutiveIdle++;
+                    int sleepTimeMs;
+
+                    if (consecutiveIdle >= 2) {
+                        System.out.println("No actions available twice. Sleeping 15-20 minutes...");
+                        int minMs = 15 * 60 * 1000;
+                        int maxMs = 20 * 60 * 1000;
+                        sleepTimeMs = random.nextInt(maxMs - minMs + 1) + minMs;
+                    } else {
+                        System.out.println("No action taken or cost > 40. Sleeping 5-8 minutes...");
+                        int minMs = 5 * 60 * 1000;
+                        int maxMs = 8 * 60 * 1000;
+                        sleepTimeMs = random.nextInt(maxMs - minMs + 1) + minMs;
+                    }
+
+                    sleep(sleepTimeMs);
+                }
+
+                driver.navigate().refresh();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (driver != null) {
+                driver.quit();
+            }
+        }
+    }
+
+    public static boolean shouldStopNow(Instant startTime) {
+        long elapsedMinutes = Duration.between(startTime, Instant.now()).toMinutes();
+        return elapsedMinutes >= MAX_RUN_MINUTES;
+    }
+
+    public static void sleep(int ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
