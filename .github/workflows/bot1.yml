@@ -97,7 +97,7 @@ jobs:
           sudo apt-get install -y google-chrome-stable
 
       - name: Run Bot
-        run: mvn -q clean compile exec:java
+        run: mvn -q clean compile exec:java -Dexec.mainClass="Main"
         env:
           GAME_ID: ${{ secrets[matrix.game_id_secret] }}
           GAME_PASSWORD: ${{ secrets[matrix.game_password_secret] }}
