@@ -1,4 +1,4 @@
-name: newone Workflow
+name: newChe Workflow
 
 on:
   workflow_dispatch:
