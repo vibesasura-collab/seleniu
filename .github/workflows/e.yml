@@ -20,8 +20,8 @@ jobs:
             game_password_secret: GAME_PASSWORD_6
 
           - id: 3
-            game_id_secret: GAME_ID_4
-            game_password_secret: GAME_PASSWORD_4
+            game_id_secret: GAME_ID_28
+            game_password_secret: GAME_PASSWORD_28
 
           - id: 4
             game_id_secret: GAME_ID_2
@@ -76,8 +76,8 @@ jobs:
             game_password_secret: GAME_PASSWORD_25
 
           - id: 17
-            game_id_secret: GAME_ID_19
-            game_password_secret: GAME_PASSWORD_19
+            game_id_secret: GAME_ID_31
+            game_password_secret: GAME_PASSWORD_31
 
           - id: 18
             game_id_secret: GAME_ID_14
