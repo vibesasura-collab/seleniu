@@ -112,7 +112,7 @@ public class Newone {
                         if (!number.isEmpty()) {
                             int cost = Integer.parseInt(number);
 
-                            if (cost <= 20) {
+                            if (cost <= 100) {
                                 passBtn.click();
                                 System.out.println("Clicked 'Pass now for " + cost + "'");
                                 sleep(300);
