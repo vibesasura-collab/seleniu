@@ -11,12 +11,12 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 public class Newone {
 
     private static final int MAX_RUN_MINUTES = 345;
     private static final boolean TODAY_OFF = false;
+    private static final int LOOP_INTERVAL_MS = 2000; // 2-second poll rate
 
     public static void main(String[] args) {
 
@@ -29,7 +29,7 @@ public class Newone {
         String pass = System.getenv("GAME_PASSWORD");
 
         if (user == null || user.isEmpty() || pass == null || pass.isEmpty()) {
-            throw new RuntimeException("GAME_ID or GAME_PASSWORD not found in environment secrets.");
+            throw new RuntimeException("GAME_ID or GAME_PASSWORD not found in GitHub Secrets.");
         }
 
         WebDriverManager.chromedriver().setup();
@@ -42,22 +42,24 @@ public class Newone {
         options.addArguments("--window-size=1920,1080");
         options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
+        // Speed Optimization 1: Fast Page Load Strategy (don't wait for full image/asset loads)
         options.setPageLoadStrategy(PageLoadStrategy.EAGER);
 
+        // Speed Optimization 2: Disable image loading to save network bandwidth and DOM rendering time
         Map<String, Object> prefs = new HashMap<>();
         prefs.put("profile.managed_default_content_settings.images", 2);
         options.setExperimentalOption("prefs", prefs);
 
         WebDriver driver = new ChromeDriver(options);
         Instant startTime = Instant.now();
-        Random random = new Random();
 
         try {
-            driver.manage().timeouts().implicitlyWait(Duration.ofMillis(500));
+            // Speed Optimization 3: Minimal implicit wait so missing elements return immediately
+            driver.manage().timeouts().implicitlyWait(Duration.ofMillis(300));
 
-            // 1. Login Block
             driver.get("https://elem.cards/login/");
 
+            // Login Block
             List<WebElement> userInputs = driver.findElements(By.name("plogin"));
             List<WebElement> passInputs = driver.findElements(By.name("ppass"));
             List<WebElement> submitBtns = driver.findElements(By.cssSelector("input[type='submit']"));
@@ -72,7 +74,7 @@ public class Newone {
                 return;
             }
 
-            // 2. Navigate to Invasion section (/urfin/)
+            // Navigate to Invasion section
             boolean navigated = false;
             for (int attempt = 1; attempt <= 5; attempt++) {
                 List<WebElement> urfinLinks = driver.findElements(By.cssSelector("a.urfin, a[href*='/urfin/']"));
@@ -90,96 +92,65 @@ public class Newone {
                 return;
             }
 
-            // Main Automation Loop
+            // Fast Execution Loop - Executes every 2 seconds
             while (true) {
+                long loopStart = System.currentTimeMillis();
+
                 if (shouldStopNow(startTime)) {
                     System.out.println("Stopping now due to runtime limit.");
                     break;
                 }
 
-                // 3. Click Initial "Напасть" (Start) button if present
-                List<WebElement> startBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/start/') and not(contains(@class, 'orange'))]"));
-                if (!startBtns.isEmpty()) {
-                    startBtns.get(0).click();
-                    System.out.println("Clicked initial 'Напасть' button.");
-                    sleep(1000);
-                }
+                // -------- 1. Check Pass Now Gold Cost (<= 40) --------
+                List<WebElement> passNowBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/auto/')]"));
+                if (!passNowBtns.isEmpty()) {
+                    try {
+                        WebElement passBtn = passNowBtns.get(0);
+                        String text = passBtn.getText();
+                        String number = text.replaceAll("[^0-9]", "");
 
-                // XPath condition: attack0, attack1, or attack2 links excluding hide2 and chide2
-                String attackXPath = "//a[(contains(@href, '/urfin/battle/attack0/') or " +
-                        "contains(@href, '/urfin/battle/attack1/') or " +
-                        "contains(@href, '/urfin/battle/attack2/')) and " +
-                        "not(contains(@href, 'hide2')) and not(contains(@href, 'chide2'))]";
+                        if (!number.isEmpty()) {
+                            int cost = Integer.parseInt(number);
 
-                // 4. Attack Loop (Attack 0, 1, 2)
-                while (true) {
-                    List<WebElement> attacks = driver.findElements(By.xpath(attackXPath));
+                            if (cost <= 20) {
+                                passBtn.click();
+                                System.out.println("Clicked 'Pass now for " + cost + "'");
+                                sleep(300);
 
-                    if (!attacks.isEmpty()) {
-                        attacks.get(0).click();
-                        System.out.println("Clicked attack card.");
-                        sleep(1000);
-                    } else {
-                        // Double-check condition: wait 10 seconds and check a 2nd time before proceeding
-                        System.out.println("No attack cards found. Waiting 10 seconds to verify...");
-                        sleep(10000);
-
-                        List<WebElement> recheckAttacks = driver.findElements(By.xpath(attackXPath));
-                        if (recheckAttacks.isEmpty()) {
-                            System.out.println("Confirmed no attack cards remaining.");
-                            break; // Exit attack sub-loop
+                                // Fast Confirm 'Yes!'
+                                List<WebElement> yesBtns = driver.findElements(By.xpath("//a[contains(@href, 'confirmed')] | //span[text()='Yes!']"));
+                                if (!yesBtns.isEmpty()) {
+                                    yesBtns.get(0).click();
+                                    System.out.println("Clicked 'Yes!' confirmation");
+                                    sleep(300);
+                                }
+                            }
                         }
+                    } catch (Exception e) {
+                        System.out.println("Error processing Pass now: " + e.getMessage());
                     }
                 }
 
-                // 5. Click "Далее" (Next) button
-                List<WebElement> nextBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/') and .//span[contains(text(), 'Далее')]]"));
+                // -------- 2. Check Next Button --------
+                List<WebElement> nextBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/')]//span[text()='Next'] | //span[text()='Next']"));
                 if (!nextBtns.isEmpty()) {
-                    nextBtns.get(0).click();
-                    System.out.println("Clicked 'Далее' (Next).");
-                    sleep(1000);
+                    try {
+                        nextBtns.get(0).click();
+                        System.out.println("Clicked 'Next' button.");
+                        sleep(300);
+                    } catch (Exception e) {
+                        System.out.println("Error clicking Next button: " + e.getMessage());
+                    }
                 }
 
-                // 6. Check Gold Cost for Immediate Attack ("Напасть сразу")
-                List<WebElement> goldAttackBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/start/') and contains(@class, 'orange')]"));
+                // Refresh page to load updated state instantly
+                driver.navigate().refresh();
 
-                if (!goldAttackBtns.isEmpty()) {
-                    String btnText = goldAttackBtns.get(0).getText();
-                    String goldDigits = btnText.replaceAll("[^0-9]", "");
-                    int goldCost = goldDigits.isEmpty() ? 0 : Integer.parseInt(goldDigits);
-
-                    System.out.println("Detected gold cost: " + goldCost);
-
-                    if (goldCost <= 20) {
-                        // Click gold attack button
-                        goldAttackBtns.get(0).click();
-                        System.out.println("Clicked 'Напасть сразу' for " + goldCost + " gold.");
-                        sleep(1000);
-
-                        // Click confirmation "Да!"
-                        List<WebElement> confirmBtns = driver.findElements(By.xpath("//a[contains(@href, '/urfin/start/confirmed/')]"));
-                        if (!confirmBtns.isEmpty()) {
-                            confirmBtns.get(0).click();
-                            System.out.println("Clicked 'Да!' confirmation.");
-                            sleep(1000);
-                        }
-
-                        // Loop re-enters attack sequence
-                        continue;
-                    } else {
-                        // Gold cost > 20: Sleep for 16 to 20 minutes
-                        int sleepMinutes = 16 + random.nextInt(5); // Random between 16 and 20
-                        System.out.println("Gold cost (" + goldCost + ") > 20. Sleeping for " + sleepMinutes + " minutes...");
-                        sleep(sleepMinutes * 60 * 1000);
-
-                        // Navigate back to invasion page after waking up
-                        driver.navigate().to("https://elem.cards/urfin/");
-                        sleep(2000);
-                    }
-                } else {
-                    // Fallback refresh if element state isn't updated
-                    sleep(2000);
-                    driver.navigate().refresh();
+                // Maintain strictly 2-second cycle rate
+                long elapsed = System.currentTimeMillis() - loopStart;
+                long sleepTime = LOOP_INTERVAL_MS - elapsed;
+                if (sleepTime > 0) {
+                    sleep((int) sleepTime);
                 }
             }
 
