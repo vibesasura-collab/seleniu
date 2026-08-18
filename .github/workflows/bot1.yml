@@ -83,10 +83,6 @@ jobs:
             game_id_secret: GAME_ID_14
             game_password_secret: GAME_PASSWORD_14
 
-          - id: 19
-            game_id_secret: GAME_ID_50
-            game_password_secret: GAME_PASSWORD_50
-
     steps:
       - uses: actions/checkout@v3
 
