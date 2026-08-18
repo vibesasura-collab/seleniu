@@ -67,7 +67,27 @@ public class E {
                 return;
             }
 
-            // Step 1: Check and click EXP buff purchase link if present
+            // Step 1: Click Store link
+            List<WebElement> storeBtns = driver.findElements(By.xpath("//a[@href='/shop/']"));
+            if (!storeBtns.isEmpty()) {
+                storeBtns.get(0).click();
+                System.out.println("Clicked Store link.");
+                sleep(1000);
+            } else {
+                System.out.println("Store link not present.");
+            }
+
+            // Step 2: Click Buffs section link
+            List<WebElement> buffsBtns = driver.findElements(By.xpath("//a[@href='/shop/buffs/']"));
+            if (!buffsBtns.isEmpty()) {
+                buffsBtns.get(0).click();
+                System.out.println("Clicked Buffs section link.");
+                sleep(1000);
+            } else {
+                System.out.println("Buffs section link not present.");
+            }
+
+            // Step 3: Check and click EXP buff purchase link if present
             List<WebElement> expBuffBtns = driver.findElements(By.xpath("//a[contains(@href, '/shop/buffs/buy/exp100/')]"));
             if (!expBuffBtns.isEmpty()) {
                 expBuffBtns.get(0).click();
@@ -77,7 +97,7 @@ public class E {
                 System.out.println("EXP buff purchase link not present.");
             }
 
-            // Step 2: Check and click Silver buff purchase link if present
+            // Step 4: Check and click Silver buff purchase link if present
             List<WebElement> silverBuffBtns = driver.findElements(By.xpath("//a[contains(@href, '/shop/buffs/buy/silver100/')]"));
             if (!silverBuffBtns.isEmpty()) {
                 silverBuffBtns.get(0).click();
