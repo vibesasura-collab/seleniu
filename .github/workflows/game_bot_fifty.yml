@@ -1,0 +1,35 @@
+name: GameBotFifty Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: 1
+            game_id_secret: GAME_ID_50
+            game_password_secret: GAME_PASSWORD_50
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Run Bot
+        run: mvn -q clean compile exec:java -Dexec.mainClass="GameBotFifty"
+        env:
+          GAME_ID: ${{ secrets[matrix.game_id_secret] }}
+          GAME_PASSWORD: ${{ secrets[matrix.game_password_secret] }}
