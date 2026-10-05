@@ -2,6 +2,13 @@ name: Bot 1
 
 on:
   workflow_dispatch:
+  schedule:
+    # Runs every 5 hours and 40 minutes (UTC times)
+    - cron: '0 0 * * *'
+    - cron: '40 5 * * *'
+    - cron: '20 11 * * *'
+    - cron: '0 17 * * *'
+    - cron: '40 22 * * *'
 
 jobs:
   run-bot:
@@ -12,76 +19,48 @@ jobs:
       matrix:
         include:
           - id: 1
-            game_id_secret: GAME_ID_1
-            game_password_secret: GAME_PASSWORD_1
-
-          - id: 2
-            game_id_secret: GAME_ID_6
-            game_password_secret: GAME_PASSWORD_6
-
-          - id: 3
             game_id_secret: GAME_ID_28
             game_password_secret: GAME_PASSWORD_28
 
-          - id: 4
-            game_id_secret: GAME_ID_2
-            game_password_secret: GAME_PASSWORD_2
-
-          - id: 5
-            game_id_secret: GAME_ID_5
-            game_password_secret: GAME_PASSWORD_5
-
-          - id: 6
-            game_id_secret: GAME_ID_3
-            game_password_secret: GAME_PASSWORD_3
-
-          - id: 7
-            game_id_secret: GAME_ID_37
-            game_password_secret: GAME_PASSWORD_37
-
-          - id: 8
-            game_id_secret: GAME_ID_11
-            game_password_secret: GAME_PASSWORD_11
-
-          - id: 9
-            game_id_secret: GAME_ID_29
-            game_password_secret: GAME_PASSWORD_29
-
-          - id: 10
-            game_id_secret: GAME_ID_34
-            game_password_secret: GAME_PASSWORD_34
-
-          - id: 11
-            game_id_secret: GAME_ID_30
-            game_password_secret: GAME_PASSWORD_30
-
-          - id: 12
-            game_id_secret: GAME_ID_35
-            game_password_secret: GAME_PASSWORD_35
-
-          - id: 13
-            game_id_secret: GAME_ID_20
-            game_password_secret: GAME_PASSWORD_20
-
-          - id: 14
-            game_id_secret: GAME_ID_39
-            game_password_secret: GAME_PASSWORD_39
-
-          - id: 15
-            game_id_secret: GAME_ID_8
-            game_password_secret: GAME_PASSWORD_8
-
-          - id: 16
+          - id: 2
             game_id_secret: GAME_ID_25
             game_password_secret: GAME_PASSWORD_25
 
-          - id: 17
-            game_id_secret: GAME_ID_31
-            game_password_secret: GAME_PASSWORD_31
+          - id: 3
+            game_id_secret: GAME_ID_8
+            game_password_secret: GAME_PASSWORD_8
 
-          - id: 18
+          - id: 4
+            game_id_secret: GAME_ID_19
+            game_password_secret: GAME_PASSWORD_19
+
+          - id: 5
             game_id_secret: GAME_ID_14
             game_password_secret: GAME_PASSWORD_14
+
+          - id: 6
+            game_id_secret: GAME_ID_30
+            game_password_secret: GAME_PASSWORD_30
+
+          - id: 7
+            game_id_secret: GAME_ID_34
+            game_password_secret: GAME_PASSWORD_34
+
+          - id: 8
+            game_id_secret: GAME_ID_20
+            game_password_secret: GAME_PASSWORD_20
+
+          - id: 9
+            game_id_secret: GAME_ID_3
+            game_password_secret: GAME_PASSWORD_3
+
+          - id: 10
+            game_id_secret: GAME_ID_39
+            game_password_secret: GAME_PASSWORD_39
+
+          - id: 11
+            game_id_secret: GAME_ID_37
+            game_password_secret: GAME_PASSWORD_37
 
     steps:
       - uses: actions/checkout@v3
