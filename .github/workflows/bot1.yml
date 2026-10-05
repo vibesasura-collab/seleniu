@@ -3,12 +3,8 @@ name: Bot 1
 on:
   workflow_dispatch:
   schedule:
-    # Runs every 5 hours and 40 minutes (UTC times)
-    - cron: '0 0 * * *'
-    - cron: '40 5 * * *'
-    - cron: '20 11 * * *'
-    - cron: '0 17 * * *'
-    - cron: '40 22 * * *'
+    # Runs every 7 hours
+    - cron: '0 */7 * * *'
 
 jobs:
   run-bot:
